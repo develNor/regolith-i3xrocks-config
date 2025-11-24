@@ -1,0 +1,7 @@
+# GPU load for nvidia/amd
+#
+# Documentation in https://github.com/vivien/i3blocks-contrib/blob/master/gpu-load/README.md
+[gpu-nvidia-amd]
+label=NVIDIA 
+interval=1
+short_text
