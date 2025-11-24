@@ -1,0 +1,71 @@
+#!/bin/bash
+# Intel GPU usage blocklet for Regolith i3xrocks
+#
+# Shows Render/3D engine "busy" percentage.
+# Uses Regolith Xresources
+
+LABEL_COLOR=${label_color:-$(xrescat i3xrocks.label.color "#7B8394")}
+VALUE_FONT=${font:-$(xrescat i3xrocks.value.font "Source Code Pro Medium 13")}
+BUTTON=${button:-}
+
+# Thresholds (can be overridden from the block config)
+T_WARN=${T_WARN:-70}
+T_CRIT=${T_CRIT:-90}
+
+# Path to file that contains the GPU JSON
+GPU_USAGE_FILE="${HOME}/.gpu_usage.json"
+
+# Read JSON from file
+if [ -r "$GPU_USAGE_FILE" ]; then
+    GPU_JSON=$(cat "$GPU_USAGE_FILE")
+else
+    GPU_JSON=""
+fi
+
+# If we didn’t get anything useful, bail quietly so we don’t spam the bar.
+if [ -z "$GPU_JSON" ]; then
+    exit 0
+fi
+
+# Extract numeric percentage from the "text" field, e.g. "37%" -> 37
+# This avoids needing jq and just uses sed.
+GPU_BUSY=$(printf '%s\n' "$GPU_JSON" | sed -n 's/.*"text":[[:space:]]*"\([0-9]\+\)%.*/\1/p')
+
+# If extraction failed, bail out
+if [ -z "$GPU_BUSY" ]; then
+    exit 0
+fi
+
+# Ensure it's an integer and format as two digits
+GPU_BUSY_INT=$(printf "%d\n" "$GPU_BUSY" 2>/dev/null)
+
+# If formatting failed (non-numeric), bail out
+if [ -z "$GPU_BUSY_INT" ]; then
+    exit 0
+fi
+
+FORMATTED=$(printf "%02d" "$GPU_BUSY_INT")
+
+# Choose color based on thresholds
+if [ "$GPU_BUSY_INT" -ge "$T_CRIT" ] 2>/dev/null; then
+    VALUE_COLOR=$(xrescat i3xrocks.critical.color red)
+elif [ "$GPU_BUSY_INT" -ge "$T_WARN" ] 2>/dev/null; then
+    VALUE_COLOR=$(xrescat i3xrocks.error.color orange)
+else
+    VALUE_COLOR=$(xrescat i3xrocks.value.color white)
+fi
+
+# Icon (can be overridden via Xresources or block env)
+# Example: i3xrocks.label.gpu-intel: 󰍛  (or any Nerd Font glyph)
+LABEL_ICON=${label_icon:-$(xrescat i3xrocks.label.gpu-intel "intel")}
+
+ICON_SPAN="<span font_desc=\"${VALUE_FONT}\" color=\"${LABEL_COLOR}\">${LABEL_ICON}</span>"
+VALUE_SPAN="<span font_desc=\"${VALUE_FONT}\" color=\"${VALUE_COLOR}\"> ${FORMATTED}%</span>"
+
+echo "${ICON_SPAN}${VALUE_SPAN}"
+
+# # Optional click action: left click opens a terminal with intel_gpu_top
+# if [[ "x${BUTTON}" == "x1" ]]; then
+#     ACTION=$(xrescat i3xrocks.action.gpu-intel "alacritty -e sudo intel_gpu_top")
+#     /usr/bin/i3-msg -q exec "$ACTION"
+# fi
