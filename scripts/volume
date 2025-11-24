@@ -59,11 +59,42 @@ mixer_info() {
 
 # Returns "on" if not mute, "off" if mute
 mixer_status() {
-    mixer_info | sed -n "s/.*\[\(on\|off\)\].*/\1/p" | head -n 1
+    STATUS=$(mixer_info 2>/dev/null | sed -n "s/.*\[\(on\|off\)\].*/\1/p" | head -n 1)
+    if [ -n "$STATUS" ]; then
+        echo "$STATUS"
+        return
+    fi
+
+    if command -v pactl >/dev/null 2>&1; then
+        MUTE=$(pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null | awk '{print $2}')
+        if [ "$MUTE" = "yes" ]; then
+            echo "off"
+            return
+        elif [ "$MUTE" = "no" ]; then
+            echo "on"
+            return
+        fi
+    fi
+
+    # Fallback: assume unmuted
+    echo "on"
 }
 
 mixer_value() {
-    VAL=$(mixer_info | sed -n -E "s/.*\[(-?[0-9]+)$UNIT\].*/\1/p" | head -n 1)
+    VAL=$(mixer_info 2>/dev/null | sed -n -E "s/.*\[(-?[0-9]+)$UNIT\].*/\1/p" | head -n 1)
+
+    # Fallback to pactl if amixer provides no value (e.g. PipeWire without ALSA 'pulse' ctl)
+    if [ -z "$VAL" ] && command -v pactl >/dev/null 2>&1; then
+        if [ "$UNIT" = "%" ]; then
+            VAL=$(pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null | \
+                sed -n 's/.* \([0-9]\+\)%.*$/\1/p' | head -n 1)
+        elif [ "$UNIT" = "dB" ]; then
+            VAL=$(pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null | \
+                sed -n 's/.* \(-\?[0-9]\+\(\.[0-9]\+\)\? dB\).*/\1/p' | \
+                head -n 1 | sed 's/ dB//' | cut -d. -f1)
+        fi
+    fi
+
     if [ -z "$VAL" ]; then
         # return empty string of same width to prevent bar shift.
         echo "   "
