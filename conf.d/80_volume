@@ -2,4 +2,4 @@
 #
 # Display Volume
 [volume]
-interval=5
+interval=1

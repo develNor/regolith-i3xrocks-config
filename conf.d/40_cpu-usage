@@ -3,5 +3,5 @@
 # The script may be called with -w and -c switches to specify thresholds,
 # see the script for details.
 [cpu-usage]
-interval=5
+interval=1
 min_width=100%

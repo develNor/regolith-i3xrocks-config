@@ -2,3 +2,10 @@
 [disk-capacity]
 interval=240
 #MNT=/home
+
+# my previous config in old system
+# info_type = "used"
+# format = "{icon} {percentage}"
+# # format = "{icon} {used}/{total} ({available} free)"
+# alert = 90
+# warning = 60

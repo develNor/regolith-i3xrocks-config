@@ -1,3 +1,11 @@
 # Memory
 [memory]
 interval=10
+
+# my previous config in old system
+# format_mem = "{mem_used_percents}"
+# format_swap = "{swap_used_percents}"
+# warning_mem = 60
+# warning_swap = 60
+# critical_mem = 90
+# critical_swap = 90
